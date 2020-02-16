@@ -46,12 +46,12 @@ print(givatChaimX)
 print(givatChaimY)
 print(givatChaimDates)
 
-for y in saadY:
-    model = ExtraTreesClassifier()
-    model.fit(saadX, saadY[y].values)
-    print(model.feature_importances_)  # use inbuilt class feature_importances of tree based classifiers
-    # plot graph of feature importances for better visualization
-    feat_importances = pd.Series(model.feature_importances_, index=saadX.columns)
-    feat_importances.nlargest(10).plot(kind='barh')
-    plt.show()
+# for y in saadY:
+#     model = ExtraTreesClassifier()
+#     model.fit(saadX, saadY[y].values)
+#     print(model.feature_importances_)  # use inbuilt class feature_importances of tree based classifiers
+#     # plot graph of feature importances for better visualization
+#     feat_importances = pd.Series(model.feature_importances_, index=saadX.columns)
+#     feat_importances.nlargest(10).plot(kind='barh')
+#     plt.show()
 
