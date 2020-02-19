@@ -27,24 +27,26 @@ def seperateXY(data):
     data = data.drop(columns=['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305'])
 
     print(data)
-    return data,dataY
+    return data, dataY
 
 
 def set_data(data):
-    data=data.loc[(data['DIM'] <= 54)] # get only the rows with DIM < 54
+    data = data.loc[(data['DIM'] <= 54)]  # get only the rows with DIM < 54
     data = shuffle(data)
     dfDate = pd.DataFrame()
-    for col in ['Date (DD/MM/YYYY)','CalvingDate']:
+    for col in ['Date (DD/MM/YYYY)', 'CalvingDate']:
         dfDate[col] = data[col]
-    data = data.drop(columns = ['Date (DD/MM/YYYY)','CalvingDate'])
+    data = data.drop(columns=['Date (DD/MM/YYYY)', 'CalvingDate'])
     all_colums = data.columns
     data = rescale_data(data)
     data = pd.DataFrame(data)
     data.columns = all_colums
     dataX, dataY = seperateXY(data)
 
-    return dataX,dataY,dfDate
-def Recursive_Feature_Elimination(regressor,X, y):
+    return dataX, dataY, dfDate
+
+
+def Recursive_Feature_Elimination(regressor, X, y):
     # no of features
     nof_list = np.arange(1, len(X.columns))
     high_score = 0
@@ -52,10 +54,11 @@ def Recursive_Feature_Elimination(regressor,X, y):
     nof = 0
     score_list = []
     yCols = ['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305']
-    badFeature=[]
+    badFeature = []
+    allYBadFeture = []
     for col in yCols:
         y_frame = pd.DataFrame(y[col])
-        high_score =0
+        high_score = 0
         for n in range(len(nof_list)):
             X_train, X_test, y_train, y_test = train_test_split(X, y_frame, test_size=0.3, random_state=0)
             model = LinearRegression()
@@ -77,38 +80,50 @@ def Recursive_Feature_Elimination(regressor,X, y):
         print("Optimum number of features: %d" % nof)
         print("Score with %d features: %f" % (nof, high_score))
         print(badFeature)
+        allYBadFeture.append(badFeature)
+    return allYBadFeture
+
+
+def runModel(X, Y, allBadFeture, regressor, dataname):  # run linear regression for each y
+    for i in range(len(Y.columns)):
+        y = Y[Y.columns[i]]
+        plt.figure(figsize=(15, 10))
+        plt.title(dataname)
+        plt.tight_layout()
+        ax = sns.distplot(y)
+
+        dataWithoutBadFeature = X.drop(columns=allBadFeture[i])
+        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+
+        regressor.fit(X_train, y_train)
+
+        y_pred = regressor.predict(X_test)
+        y_pred = pd.DataFrame(y_pred)
+        plt.show()
+
+        score = regressor.score(X_test, y_test)
+        print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
+
 
 def main():
     saadDataSet = pd.read_csv('Oded-File_Farm_56_Calibration_Saad.csv')
     givatChaimDataSet = pd.read_csv('Oded-File_Farm_626_Calibration_Givat_Chaim.csv')
+    saadAndGivatChaimDataSet = pd.concat([saadDataSet, givatChaimDataSet])
 
-    saadX,saadY,saadDates = set_data(saadDataSet.copy())
+    saadX, saadY, saadDates = set_data(saadDataSet.copy())
     givatChaimX, givatChaimY, givatChaimDates = set_data(givatChaimDataSet.copy())
-
-    plt.figure(figsize=(15,10))
-    plt.tight_layout()
-    ax = sns.distplot(saadY['sum milk 305'])
-    # plt.show()
-
-    X_train, X_test, y_train, y_test = train_test_split(saadX,saadY, test_size=0.3, random_state=0)
+    saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatDates = set_data(saadAndGivatChaimDataSet.copy())
 
     regressor = LinearRegression()
-    regressor.fit(X_train, y_train)
 
-    y_pred = regressor.predict(X_test)
-    y_pred = pd.DataFrame(y_pred)
+    saadAllYBadFeture = Recursive_Feature_Elimination(regressor, saadX, saadY)
+    givatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, givatChaimX, givatChaimY)
+    saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, saadAndGivatChaimX, saadAndGivatChaimY)
 
-    Recursive_Feature_Elimination(regressor,saadX,saadY)
+    runModel(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
+    runModel(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
+    runModel(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
 
-
-    # for y in saadY:
-    #     model = ExtraTreesClassifier()
-    #     model.fit(saadX, saadY[y].values)
-    #     print(model.feature_importances_)  # use inbuilt class feature_importances of tree based classifiers
-    #     # plot graph of feature importances for better visualization
-    #     feat_importances = pd.Series(model.feature_importances_, index=saadX.columns)
-    #     feat_importances.nlargest(10).plot(kind='barh')
-    #     plt.show()
 
 if __name__ == "__main__":
     main()
