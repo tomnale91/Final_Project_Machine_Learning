@@ -1,3 +1,4 @@
+import keras
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -12,6 +13,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn import metrics
 from sklearn.feature_selection import RFE
+
+from keras.models import Sequential
+from keras.layers import Dense
 
 
 def rescale_data(data):
@@ -84,7 +88,7 @@ def Recursive_Feature_Elimination(regressor, X, y):
     return allYBadFeture
 
 
-def runModel(X, Y, allBadFeture, regressor, dataname):  # run linear regression for each y
+def runLinearRegression(X, Y, allBadFeture, regressor, dataname):  # run linear regression for each y
     for i in range(len(Y.columns)):
         y = Y[Y.columns[i]]
         plt.figure(figsize=(15, 10))
@@ -104,6 +108,53 @@ def runModel(X, Y, allBadFeture, regressor, dataname):  # run linear regression 
         score = regressor.score(X_test, y_test)
         print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
 
+def runNeuralNetwork(X, Y, allBadFeture, dataname):
+
+    for i in range(len(Y.columns)):
+        y = Y[Y.columns[i]]
+        numberOfFeature = len(X.columns) - len(allBadFeture[i])
+        dataWithoutBadFeature = X.drop(columns=allBadFeture[i])
+        X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+        X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
+
+        print(X_train)
+        print(X_test)
+        print(X_val)
+        print(Y_train)
+        print(Y_test)
+        print(Y_val)
+
+        model = Sequential([
+            Dense(32, activation='relu', input_shape=(numberOfFeature,)),
+            Dense(32, activation='relu'),
+            Dense(1, activation='sigmoid'),
+        ])
+        model.compile(optimizer='adam',
+                      loss='binary_crossentropy',
+                      metrics=['accuracy'])
+
+
+        hist = model.fit(X_train, Y_train,
+                         batch_size=32, epochs=100,
+                         validation_data=(X_val, Y_val))
+        model.evaluate(X_test, Y_test)[1]
+
+        plt.plot(hist.history['loss'])
+        plt.plot(hist.history['val_loss'])
+        plt.title('Model loss')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+        plt.legend(['Train', 'Val'], loc='upper right')
+        plt.show()
+
+        plt.plot(hist.history['accuracy'])
+        plt.plot(hist.history['val_accuracy'])
+        plt.title('Model accuracy')
+        plt.ylabel('Accuracy')
+        plt.xlabel('Epoch')
+        plt.legend(['Train', 'Val'], loc='lower right')
+        plt.show()
+
 
 def main():
     saadDataSet = pd.read_csv('Oded-File_Farm_56_Calibration_Saad.csv')
@@ -120,9 +171,13 @@ def main():
     givatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, givatChaimX, givatChaimY)
     saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, saadAndGivatChaimX, saadAndGivatChaimY)
 
-    runModel(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
-    runModel(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
-    runModel(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
+    runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
+    runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
+    runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
+
+    runLinearRegression(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
+    runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
+    runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
 
 
 if __name__ == "__main__":
