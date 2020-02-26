@@ -87,6 +87,113 @@ def Recursive_Feature_Elimination(regressor, X, y):
         allYBadFeture.append(badFeature)
     return allYBadFeture
 
+def gradient_decent(X, Y):
+    X = np.insert(X.to_numpy(), 0, 1, 1)
+    n, m = X.shape
+    theta = np.zeros(m)
+
+    alpha = 0.1
+    Ma=1000
+    npa = np.zeros(Ma,dtype=np.float32)
+    yCols = ['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305']
+    badFeature=[]
+    for col in yCols:
+        j_theta_history1 = gd(X, Y[col], theta, alpha=alpha, M=Ma)
+        plot_graph(j_theta_history1, col)
+        npa += np.asarray(j_theta_history1, dtype=np.float32)
+    plot_graph(np.true_divide(npa, 4), "Y")
+
+    print(j_theta_history1)
+    plot_graph(j_theta_history1, alpha)
+
+    j_theta_history2 = gd_mini_batch(X,Y['sum milk 305'],theta,alpha=alpha, M=20)
+    plot_graph(j_theta_history2, alpha)
+
+    j_theta_history3 = momentum(X,Y['sum milk 305'],theta,alpha=alpha, M=2)
+    plot_graph(j_theta_history3, alpha)
+
+
+def h_theta(x, theta):
+    return np.dot(x, theta)
+def j_theta(x, y, theta):
+    print('j_theta')
+    m, n = x.shape
+    J = 0
+    for i in range(m):
+        J += (h_theta(x[i], theta) - y[i]) ** 2
+    return J / (2 * m)
+
+def grad_j_theta(x, y, theta):
+    print('grad_j_theta')
+    grad_j = []
+    m, n = x.shape
+    for i in range(n):
+        element = 0
+        for j in range(m):
+            element += (h_theta(x[i], theta) - y[i]) * x[j][i]
+        element *= (1 / m)
+        grad_j.append(element)
+    return grad_j
+
+def gd(x, y, theta, alpha=0.1, M=10 ** 3, delta=10 ** -8, epsilon=10 ** -8):
+    k = 0
+    m, n = x.shape
+    j_theta_history = []
+    while k < M:
+        print(k)
+
+        for j in range(n):
+            for i in range(m):
+                theta[j] = theta[j] - (1 / m) * alpha * x[i][j] * (h_theta(x[i], theta) -y[i])
+        j_theta_history.append(j_theta(x, y, theta))
+        k = k + 1
+
+    return j_theta_history
+
+def gd_mini_batch(x, y, theta, alpha=0.1, M=10 ** 3, delta=10 ** -8, epsilon=10 ** -8, N=100):
+    print('gd_mini_batch')
+    k = 0
+    m, n = x.shape
+    j_theta_history = []
+    while k < M:
+        start = (k * N) % m
+        end = (((k + 1) * N) - 1) % m
+        if end < start:
+            end = m - 1
+        for j in range(n):
+            for i in range(start, end):
+                theta[j] = theta[j] - (1 / m) * alpha * x[i][j] * (h_theta(x[i], theta) - y[i])
+        j_theta_history.append(j_theta(x, y, theta))
+        k = k + 1
+
+    # print(k) #print k here to check if reached M iterations or stopped before
+    return j_theta_history
+
+def momentum(x, y, theta, alpha=0.1, alpha_2=0.1, M=10 ** 3, delta=10 ** -8, epsilon=10 ** -8):
+    print('momentum')
+    k = 0
+    m, n = x.shape
+    j_theta_history = []
+    v = np.zeros(n)
+    while k < M:
+        for j in range(n):
+            for i in range(m):
+                theta[j] = theta[j] - (1 / m) * alpha * x[i][j] * (h_theta(x[i], theta) - y[i])
+            v = np.multiply(v, 1 - alpha_2) + np.multiply(grad_j_theta(x, y, theta), alpha_2)
+        theta = theta - v
+        j_theta_history.append(j_theta(x, y, theta))
+        k = k + 1
+
+    return j_theta_history
+
+def plot_graph(data,name):
+    plt.xlabel('K')
+    plt.ylabel('J(theta)')
+    plt.title('GD = ' + str(name))
+    plt.plot(data)
+    # plt.show()
+    plt.savefig(str(name)+'.png')
+
 
 def runLinearRegression(X, Y, allBadFeture, regressor, dataname):  # run linear regression for each y
     for i in range(len(Y.columns)):
@@ -167,18 +274,21 @@ def main():
 
     regressor = LinearRegression()
 
-    saadAllYBadFeture = Recursive_Feature_Elimination(regressor, saadX, saadY)
-    givatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, givatChaimX, givatChaimY)
-    saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, saadAndGivatChaimX, saadAndGivatChaimY)
+    # saadAllYBadFeture = Recursive_Feature_Elimination(regressor, saadX, saadY)
+    # givatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, givatChaimX, givatChaimY)
+    # saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, saadAndGivatChaimX, saadAndGivatChaimY)
+    #
+    # runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
+    # runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
+    # runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
+    #
+    # runLinearRegression(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
+    # runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
+    # runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
 
-    runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
-    runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
-    runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
-
-    runLinearRegression(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
-    runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
-    runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
-
+    gradient_decent(saadX,saadY)
+    gradient_decent(givatChaimX, givatChaimY)
+    gradient_decent(saadAndGivatChaimX, saadAndGivatChaimY)
 
 if __name__ == "__main__":
     main()
