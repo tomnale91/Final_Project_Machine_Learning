@@ -1,3 +1,5 @@
+from tabnanny import NannyNag
+
 import keras
 import numpy as np
 import matplotlib.pyplot as plt
@@ -224,27 +226,43 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
         X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
         X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
 
-        print(X_train)
-        print(X_test)
-        print(X_val)
-        print(Y_train)
-        print(Y_test)
-        print(Y_val)
+        # print(X_train)
+        # print(X_test)
+        # print(X_val)
+        # print(Y_train)
+        # print(Y_test)
+        # print(Y_val)
 
-        model = Sequential([
-            Dense(32, activation='relu', input_shape=(numberOfFeature,)),
-            Dense(32, activation='relu'),
-            Dense(1, activation='sigmoid'),
-        ])
-        model.compile(optimizer='adam',
-                      loss='binary_crossentropy',
-                      metrics=['accuracy'])
+        NN_model = Sequential()
 
+        # The Input Layer :
+        NN_model.add(Dense(int(numberOfFeature / 2), kernel_initializer='normal', input_shape=(numberOfFeature,),
+                           activation='relu'))
 
-        hist = model.fit(X_train, Y_train,
-                         batch_size=32, epochs=100,
-                         validation_data=(X_val, Y_val))
-        model.evaluate(X_test, Y_test)[1]
+        # The Hidden Layers :
+        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+
+        # The Output Layer :
+        NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
+
+        # Compile the network :
+        NN_model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
+        NN_model.summary()
+
+        hist = NN_model.fit(X_train, Y_train, epochs=500, batch_size=32, validation_data=(X_val, Y_val), verbose=0)
+
+        # evaluate the model
+        _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
+        _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
+
+        y_pred = NN_model.predict(X_test)
+        plt.scatter(Y_test, y_pred)
+        plt.plot([Y_test.min(), Y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+        plt.xlabel('Actual ')
+        plt.ylabel('Predict')
+        plt.show()
 
         plt.plot(hist.history['loss'])
         plt.plot(hist.history['val_loss'])
@@ -254,14 +272,39 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
         plt.legend(['Train', 'Val'], loc='upper right')
         plt.show()
 
-        plt.plot(hist.history['accuracy'])
-        plt.plot(hist.history['val_accuracy'])
-        plt.title('Model accuracy')
-        plt.ylabel('Accuracy')
-        plt.xlabel('Epoch')
-        plt.legend(['Train', 'Val'], loc='lower right')
-        plt.show()
 
+def MakingPredictions(X,Y):
+    rs = 1
+    ests = [linear_model.LinearRegression(), linear_model.Ridge(),
+            linear_model.Lasso(), linear_model.ElasticNet(),
+            linear_model.BayesianRidge(), linear_model.OrthogonalMatchingPursuit()]
+    ests_labels = np.array(['Linear', 'Ridge', 'Lasso', 'ElasticNet', 'BayesRidge', 'OMP'])
+    errvals = np.array([])
+
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=20)
+
+    for e in ests:
+        e.fit(X_train, y_train)
+        this_err = metrics.median_absolute_error(y_test, e.predict(X_test))
+        # print "got error %0.2f" % this_err
+        errvals = np.append(errvals, this_err)
+
+    pos = np.arange(errvals.shape[0])
+    srt = np.argsort(errvals)
+    plt.figure(figsize=(7, 5))
+    plt.bar(pos, errvals[srt], align='center')
+    plt.xticks(pos, ests_labels[srt])
+    plt.xlabel('Estimator')
+    plt.ylabel('Median Absolute Error')
+    plt.show()
+
+def run_compare_with_linear_models(X,Y):
+    yCols = ['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305']
+    plt.style.use('ggplot')
+
+    for col in yCols:
+        alldata = pd.concat([X, Y[col]])
+        MakingPredictions(X, Y[col])
 
 def main():
     saadDataSet = pd.read_csv('Oded-File_Farm_56_Calibration_Saad.csv')
@@ -274,21 +317,25 @@ def main():
 
     regressor = LinearRegression()
 
-    # saadAllYBadFeture = Recursive_Feature_Elimination(regressor, saadX, saadY)
-    # givatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, givatChaimX, givatChaimY)
-    # saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, saadAndGivatChaimX, saadAndGivatChaimY)
-    #
-    # runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
-    # runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
-    # runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
-    #
-    # runLinearRegression(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
-    # runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
-    # runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
+    saadAllYBadFeture = Recursive_Feature_Elimination(regressor, saadX, saadY)
+    givatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, givatChaimX, givatChaimY)
+    saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, saadAndGivatChaimX, saadAndGivatChaimY)
+
+    runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
+    runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
+    runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
+
+    runLinearRegression(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
+    runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
+    runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
 
     gradient_decent(saadX,saadY)
     gradient_decent(givatChaimX, givatChaimY)
     gradient_decent(saadAndGivatChaimX, saadAndGivatChaimY)
+
+    run_compare_with_linear_models(saadX,saadY)
+    run_compare_with_linear_models(givatChaimX, givatChaimY)
+    run_compare_with_linear_models(saadAndGivatChaimX, saadAndGivatChaimY)
 
 if __name__ == "__main__":
     main()
