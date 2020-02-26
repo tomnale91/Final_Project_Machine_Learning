@@ -17,7 +17,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import SGDRegressor
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import RidgeCV
-from sklearn import metrics
+from sklearn import metrics, linear_model
 from sklearn.feature_selection import RFE
 
 from keras.models import Sequential
@@ -220,7 +220,12 @@ def runSGD(X,Y,allBadFeature,dataname,y_scores):
             y_pred = regressor.predict(X_test)
             y_pred = pd.DataFrame(y_pred)
             # plt.show()
-
+            plt.scatter(y_test, y_pred)
+            plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+            plt.title('SGD - {} - {}'.format(func,Y.columns[i]))
+            plt.xlabel('Actual ')
+            plt.ylabel('Predict')
+            plt.show()
             score = regressor.score(X_test, y_test)
             y_scores[i].append(score)
             print('Farm: {}, loss function: {}, y: {}, score: {}'.format(dataname,func, Y.columns[i], score))
@@ -244,7 +249,12 @@ def runSimpleLinearRegression(X,Y,allBadFeature,dataname,y_scores):
         y_pred = regressor.predict(X_test)
         y_pred = pd.DataFrame(y_pred)
         # plt.show()
-
+        plt.scatter(y_test, y_pred)
+        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+        plt.title('Simple Linear Regression - {}'.format(Y.columns[i]))
+        plt.xlabel('Actual ')
+        plt.ylabel('Predict')
+        plt.show()
         score = regressor.score(X_test, y_test)
         y_scores[i].append(score)
         print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
@@ -267,7 +277,12 @@ def runRidge(X,Y,allBadFeature,dataname,y_scores):
         y_pred = regressor.predict(X_test)
         y_pred = pd.DataFrame(y_pred)
         # plt.show()
-
+        plt.scatter(y_test, y_pred)
+        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+        plt.title('Ridge - {}'.format(Y.columns[i]))
+        plt.xlabel('Actual ')
+        plt.ylabel('Predict')
+        plt.show()
         score = regressor.score(X_test, y_test)
         y_scores[i].append(score)
         print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
@@ -290,7 +305,12 @@ def runRidgeCV(X,Y,allBadFeature,dataname,y_scores):
         y_pred = regressor.predict(X_test)
         y_pred = pd.DataFrame(y_pred)
         # plt.show()
-
+        plt.scatter(y_test, y_pred)
+        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+        plt.title('RidgeCV - {}'.format(Y.columns[i]))
+        plt.xlabel('Actual ')
+        plt.ylabel('Predict')
+        plt.show()
         score = regressor.score(X_test, y_test)
         y_scores[i].append(score)
         print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
@@ -320,33 +340,10 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
         X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
         X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
 
-        # print(X_train)
-        # print(X_test)
-        # print(X_val)
-        # print(Y_train)
-        # print(Y_test)
-        # print(Y_val)
-
-        NN_model = Sequential()
         NN_model = Sequential()
 
         # The Input Layer :
         NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
-
-        # The Hidden Layers :
-        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-
-        # The Output Layer :
-        NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
-
-        # The Input Layer :
-        NN_model.add(Dense(int(numberOfFeature / 2), kernel_initializer='normal', input_shape=(numberOfFeature,),
-                           activation='relu'))
-        # Compile the network :
-        NN_model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
-        NN_model.summary()
 
         # The Hidden Layers :
         NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
@@ -429,8 +426,6 @@ def main():
     givatChaimX, givatChaimY, givatChaimDates = set_data(givatChaimDataSet.copy())
     saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatDates = set_data(saadAndGivatChaimDataSet.copy())
 
-
-
     saadAllYBadFeture = Recursive_Feature_Elimination(saadX, saadY)
     givatChaimAllYBadFeture = Recursive_Feature_Elimination(givatChaimX, givatChaimY)
     saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(saadAndGivatChaimX, saadAndGivatChaimY)
@@ -441,17 +436,6 @@ def main():
 
     runLinearRegression(saadX, saadY, saadAllYBadFeture,'Saad')
     runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
-    runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
-    saadAllYBadFeture = Recursive_Feature_Elimination( saadX, saadY)
-    givatChaimAllYBadFeture = Recursive_Feature_Elimination( givatChaimX, givatChaimY)
-    saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination( saadAndGivatChaimX, saadAndGivatChaimY)
-
-    runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
-    runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
-    runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
-
-    runLinearRegression(saadX, saadY, saadAllYBadFeture, 'Saad')
-    runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture, 'Givat Chaim')
     runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
 
     gradient_decent(saadX,saadY)
