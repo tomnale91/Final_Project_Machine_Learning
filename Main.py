@@ -13,6 +13,8 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import SGDRegressor
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import RidgeCV
 from sklearn import metrics
 from sklearn.feature_selection import RFE
 
@@ -197,27 +199,115 @@ def plot_graph(data,name):
     # plt.show()
     plt.savefig(str(name)+'.png')
 
+def runSGD(X,Y,allBadFeature,dataname,y_scores):
+    lossFunctions = ['squared_loss', 'huber', 'epsilon_insensitive', 'squared_epsilon_insensitive']
+    for func in lossFunctions:
+        regressor = SGDRegressor(loss=func,eta0=0.001)
+        for i in range(len(Y.columns)):
+            y = Y[Y.columns[i]]
+            # plt.figure(figsize=(15, 10))
+            # plt.title(dataname)
+            # plt.tight_layout()
+            # ax = sns.distplot(y)
 
-def runLinearRegression(X, Y, allBadFeture, dataname):  # run linear regression for each y
-    regressor = SGDRegressor(loss ='huber')
+            dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
+            X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+
+            regressor.fit(X_train, y_train)
+
+            y_pred = regressor.predict(X_test)
+            y_pred = pd.DataFrame(y_pred)
+            # plt.show()
+
+            score = regressor.score(X_test, y_test)
+            y_scores[i].append(score)
+            print('Farm: {}, loss function: {}, y: {}, score: {}'.format(dataname,func, Y.columns[i], score))
+    return y_scores
+
+
+def runSimpleLinearRegression(X,Y,allBadFeature,dataname,y_scores):
+    regressor = LinearRegression()
     for i in range(len(Y.columns)):
         y = Y[Y.columns[i]]
-        plt.figure(figsize=(15, 10))
-        plt.title(dataname)
-        plt.tight_layout()
-        ax = sns.distplot(y)
+        # plt.figure(figsize=(15, 10))
+        # plt.title(dataname)
+        # plt.tight_layout()
+        # ax = sns.distplot(y)
 
-        dataWithoutBadFeature = X.drop(columns=allBadFeture[i])
+        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
         X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
 
         regressor.fit(X_train, y_train)
 
         y_pred = regressor.predict(X_test)
         y_pred = pd.DataFrame(y_pred)
-        plt.show()
+        # plt.show()
 
         score = regressor.score(X_test, y_test)
+        y_scores[i].append(score)
         print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
+    return y_scores
+
+def runRidge(X,Y,allBadFeature,dataname,y_scores):
+    regressor = Ridge()
+    for i in range(len(Y.columns)):
+        y = Y[Y.columns[i]]
+        # plt.figure(figsize=(15, 10))
+        # plt.title(dataname)
+        # plt.tight_layout()
+        # ax = sns.distplot(y)
+
+        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
+        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+
+        regressor.fit(X_train, y_train)
+
+        y_pred = regressor.predict(X_test)
+        y_pred = pd.DataFrame(y_pred)
+        # plt.show()
+
+        score = regressor.score(X_test, y_test)
+        y_scores[i].append(score)
+        print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
+    return y_scores
+
+def runRidgeCV(X,Y,allBadFeature,dataname,y_scores):
+    regressor = RidgeCV()
+    for i in range(len(Y.columns)):
+        y = Y[Y.columns[i]]
+        # plt.figure(figsize=(15, 10))
+        # plt.title(dataname)
+        # plt.tight_layout()
+        # ax = sns.distplot(y)
+
+        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
+        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+
+        regressor.fit(X_train, y_train)
+
+        y_pred = regressor.predict(X_test)
+        y_pred = pd.DataFrame(y_pred)
+        # plt.show()
+
+        score = regressor.score(X_test, y_test)
+        y_scores[i].append(score)
+        print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
+    return y_scores
+
+def runLinearRegression(X, Y, allBadFeature, dataname):  # run linear regression for each y
+    function = ['SGD-squared_loss', 'SGD-huber', 'SGD-epsilon_insensitive', 'SGD-squared_epsilon_insensitive','Simple Linear Regression','Ridge','RidgeCV']
+    y_scores = [[],[],[],[]]
+
+    y_scores = runSGD(X,Y,allBadFeature,dataname,y_scores)
+    y_scores = runSimpleLinearRegression(X,Y,allBadFeature,dataname,y_scores)
+    y_scores = runRidge(X,Y,allBadFeature,dataname,y_scores)
+    y_scores = runRidgeCV(X,Y,allBadFeature,dataname,y_scores)
+
+    print(y_scores)
+    for y in y_scores:
+        index = y.index(max(y))
+        print('index:{}, function:{}'.format(index,function[index]))
+
 
 def runNeuralNetwork(X, Y, allBadFeture, dataname):
 
