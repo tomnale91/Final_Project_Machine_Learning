@@ -2,6 +2,7 @@ import keras
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from keras.callbacks import ModelCheckpoint
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.utils import shuffle
@@ -117,43 +118,38 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
         X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
         X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
 
-        print(X_train)
-        print(X_test)
-        print(X_val)
-        print(Y_train)
-        print(Y_test)
-        print(Y_val)
+        NN_model = Sequential()
 
-        model = Sequential([
-            Dense(32, activation='relu', input_shape=(numberOfFeature,)),
-            Dense(32, activation='relu'),
-            Dense(1, activation='sigmoid'),
-        ])
-        model.compile(optimizer='adam',
-                      loss='binary_crossentropy',
-                      metrics=['accuracy'])
+        # The Input Layer :
+        NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
+
+        # The Hidden Layers :
+        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+
+        # The Output Layer :
+        NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
+
+        # Compile the network :
+        NN_model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
+        NN_model.summary()
 
 
-        hist = model.fit(X_train, Y_train,
-                         batch_size=32, epochs=100,
-                         validation_data=(X_val, Y_val))
-        model.evaluate(X_test, Y_test)[1]
+        hist = NN_model.fit(X_train, Y_train, epochs=500, batch_size=32, validation_data=(X_val, Y_val),verbose=0)
+
+        # evaluate the model
+        _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
+        _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
 
         plt.plot(hist.history['loss'])
         plt.plot(hist.history['val_loss'])
-        plt.title('Model loss')
+        plt.title('Model loss - {} - {}'.format(dataname,Y.columns[i]))
         plt.ylabel('Loss')
         plt.xlabel('Epoch')
         plt.legend(['Train', 'Val'], loc='upper right')
         plt.show()
 
-        plt.plot(hist.history['accuracy'])
-        plt.plot(hist.history['val_accuracy'])
-        plt.title('Model accuracy')
-        plt.ylabel('Accuracy')
-        plt.xlabel('Epoch')
-        plt.legend(['Train', 'Val'], loc='lower right')
-        plt.show()
 
 
 def main():
