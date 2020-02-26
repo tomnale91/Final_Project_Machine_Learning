@@ -95,13 +95,17 @@ def gradient_decent(X, Y):
     theta = np.zeros(m)
 
     alpha = 0.1
-    Ma=1000
+    Ma=20
     npa = np.zeros(Ma,dtype=np.float32)
     yCols = ['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305']
     badFeature=[]
     for col in yCols:
-        j_theta_history1 = gd(X, Y[col], theta, alpha=alpha, M=Ma)
+        theta, j_theta_history1 = gd(X, Y[col], theta, alpha=alpha, M=Ma)
         plot_graph(j_theta_history1, col)
+        p = classifierPredict(theta, X)
+        print(p)
+        print(Y[col])
+        print("Train Accuracy:", sum(p ==  Y[col])[0], "%")
         npa += np.asarray(j_theta_history1, dtype=np.float32)
     plot_graph(np.true_divide(npa, 4), "Y")
 
@@ -113,6 +117,16 @@ def gradient_decent(X, Y):
 
     j_theta_history3 = momentum(X,Y['sum milk 305'],theta,alpha=alpha, M=2)
     plot_graph(j_theta_history3, alpha)
+
+
+def classifierPredict(theta, X):
+    """
+    take in numpy array of theta and X and predict the class
+    """
+    predictions = X.dot(theta)
+
+    return predictions > 0
+
 
 
 def h_theta(x, theta):
@@ -150,7 +164,7 @@ def gd(x, y, theta, alpha=0.1, M=10 ** 3, delta=10 ** -8, epsilon=10 ** -8):
         j_theta_history.append(j_theta(x, y, theta))
         k = k + 1
 
-    return j_theta_history
+    return theta[j] , j_theta_history
 
 def gd_mini_batch(x, y, theta, alpha=0.1, M=10 ** 3, delta=10 ** -8, epsilon=10 ** -8, N=100):
     print('gd_mini_batch')
