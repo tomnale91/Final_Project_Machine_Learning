@@ -12,6 +12,7 @@ import seaborn as seabornInstance
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import SGDRegressor
 from sklearn import metrics
 from sklearn.feature_selection import RFE
 
@@ -51,7 +52,8 @@ def set_data(data):
     return dataX, dataY, dfDate
 
 
-def Recursive_Feature_Elimination(regressor, X, y):
+def Recursive_Feature_Elimination(X, y):
+    regressor = LinearRegression()
     # no of features
     nof_list = np.arange(1, len(X.columns))
     high_score = 0
@@ -196,7 +198,8 @@ def plot_graph(data,name):
     plt.savefig(str(name)+'.png')
 
 
-def runLinearRegression(X, Y, allBadFeture, regressor, dataname):  # run linear regression for each y
+def runLinearRegression(X, Y, allBadFeture, dataname):  # run linear regression for each y
+    regressor = SGDRegressor(loss ='huber')
     for i in range(len(Y.columns)):
         y = Y[Y.columns[i]]
         plt.figure(figsize=(15, 10))
@@ -268,19 +271,19 @@ def main():
     givatChaimX, givatChaimY, givatChaimDates = set_data(givatChaimDataSet.copy())
     saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatDates = set_data(saadAndGivatChaimDataSet.copy())
 
-    regressor = LinearRegression()
 
-    # saadAllYBadFeture = Recursive_Feature_Elimination(regressor, saadX, saadY)
-    # givatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, givatChaimX, givatChaimY)
-    # saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, saadAndGivatChaimX, saadAndGivatChaimY)
-    #
+
+    saadAllYBadFeture = Recursive_Feature_Elimination(saadX, saadY)
+    givatChaimAllYBadFeture = Recursive_Feature_Elimination(givatChaimX, givatChaimY)
+    saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(saadAndGivatChaimX, saadAndGivatChaimY)
+
     # runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
     # runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
     # runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
-    #
-    # runLinearRegression(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
-    # runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
-    # runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
+
+    runLinearRegression(saadX, saadY, saadAllYBadFeture,'Saad')
+    runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
+    runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
 
     gradient_decent(saadX,saadY)
     gradient_decent(givatChaimX, givatChaimY)
