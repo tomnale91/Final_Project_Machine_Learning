@@ -4,6 +4,7 @@ import keras
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from keras.callbacks import ModelCheckpoint
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.utils import shuffle
@@ -13,7 +14,10 @@ import seaborn as seabornInstance
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn import metrics
+from sklearn.linear_model import SGDRegressor
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import RidgeCV
+from sklearn import metrics, linear_model
 from sklearn.feature_selection import RFE
 
 from keras.models import Sequential
@@ -52,7 +56,8 @@ def set_data(data):
     return dataX, dataY, dfDate
 
 
-def Recursive_Feature_Elimination(regressor, X, y):
+def Recursive_Feature_Elimination(X, y):
+    regressor = LinearRegression()
     # no of features
     nof_list = np.arange(1, len(X.columns))
     high_score = 0
@@ -210,26 +215,135 @@ def plot_graph(data,name):
     # plt.show()
     plt.savefig(str(name)+'.png')
 
+def runSGD(X,Y,allBadFeature,dataname,y_scores):
+    lossFunctions = ['squared_loss', 'huber', 'epsilon_insensitive', 'squared_epsilon_insensitive']
+    for func in lossFunctions:
+        regressor = SGDRegressor(loss=func,eta0=0.001)
+        for i in range(len(Y.columns)):
+            y = Y[Y.columns[i]]
+            # plt.figure(figsize=(15, 10))
+            # plt.title(dataname)
+            # plt.tight_layout()
+            # ax = sns.distplot(y)
 
-def runLinearRegression(X, Y, allBadFeture, regressor, dataname):  # run linear regression for each y
+            dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
+            X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+
+            regressor.fit(X_train, y_train)
+
+            y_pred = regressor.predict(X_test)
+            y_pred = pd.DataFrame(y_pred)
+            # plt.show()
+            plt.scatter(y_test, y_pred)
+            plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+            plt.title('SGD - {} - {}'.format(func,Y.columns[i]))
+            plt.xlabel('Actual ')
+            plt.ylabel('Predict')
+            plt.show()
+            score = regressor.score(X_test, y_test)
+            y_scores[i].append(score)
+            print('Farm: {}, loss function: {}, y: {}, score: {}'.format(dataname,func, Y.columns[i], score))
+    return y_scores
+
+
+def runSimpleLinearRegression(X,Y,allBadFeature,dataname,y_scores):
+    regressor = LinearRegression()
     for i in range(len(Y.columns)):
         y = Y[Y.columns[i]]
-        plt.figure(figsize=(15, 10))
-        plt.title(dataname)
-        plt.tight_layout()
-        ax = sns.distplot(y)
+        # plt.figure(figsize=(15, 10))
+        # plt.title(dataname)
+        # plt.tight_layout()
+        # ax = sns.distplot(y)
 
-        dataWithoutBadFeature = X.drop(columns=allBadFeture[i])
+        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
         X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
 
         regressor.fit(X_train, y_train)
 
         y_pred = regressor.predict(X_test)
         y_pred = pd.DataFrame(y_pred)
+        # plt.show()
+        plt.scatter(y_test, y_pred)
+        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+        plt.title('Simple Linear Regression - {}'.format(Y.columns[i]))
+        plt.xlabel('Actual ')
+        plt.ylabel('Predict')
         plt.show()
-
         score = regressor.score(X_test, y_test)
+        y_scores[i].append(score)
         print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
+    return y_scores
+
+def runRidge(X,Y,allBadFeature,dataname,y_scores):
+    regressor = Ridge()
+    for i in range(len(Y.columns)):
+        y = Y[Y.columns[i]]
+        # plt.figure(figsize=(15, 10))
+        # plt.title(dataname)
+        # plt.tight_layout()
+        # ax = sns.distplot(y)
+
+        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
+        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+
+        regressor.fit(X_train, y_train)
+
+        y_pred = regressor.predict(X_test)
+        y_pred = pd.DataFrame(y_pred)
+        # plt.show()
+        plt.scatter(y_test, y_pred)
+        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+        plt.title('Ridge - {}'.format(Y.columns[i]))
+        plt.xlabel('Actual ')
+        plt.ylabel('Predict')
+        plt.show()
+        score = regressor.score(X_test, y_test)
+        y_scores[i].append(score)
+        print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
+    return y_scores
+
+def runRidgeCV(X,Y,allBadFeature,dataname,y_scores):
+    regressor = RidgeCV()
+    for i in range(len(Y.columns)):
+        y = Y[Y.columns[i]]
+        # plt.figure(figsize=(15, 10))
+        # plt.title(dataname)
+        # plt.tight_layout()
+        # ax = sns.distplot(y)
+
+        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
+        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+
+        regressor.fit(X_train, y_train)
+
+        y_pred = regressor.predict(X_test)
+        y_pred = pd.DataFrame(y_pred)
+        # plt.show()
+        plt.scatter(y_test, y_pred)
+        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+        plt.title('RidgeCV - {}'.format(Y.columns[i]))
+        plt.xlabel('Actual ')
+        plt.ylabel('Predict')
+        plt.show()
+        score = regressor.score(X_test, y_test)
+        y_scores[i].append(score)
+        print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
+    return y_scores
+
+def runLinearRegression(X, Y, allBadFeature, dataname):  # run linear regression for each y
+    function = ['SGD-squared_loss', 'SGD-huber', 'SGD-epsilon_insensitive', 'SGD-squared_epsilon_insensitive','Simple Linear Regression','Ridge','RidgeCV']
+    y_scores = [[],[],[],[]]
+
+    y_scores = runSGD(X,Y,allBadFeature,dataname,y_scores)
+    y_scores = runSimpleLinearRegression(X,Y,allBadFeature,dataname,y_scores)
+    y_scores = runRidge(X,Y,allBadFeature,dataname,y_scores)
+    y_scores = runRidgeCV(X,Y,allBadFeature,dataname,y_scores)
+
+    print(y_scores)
+    for y in y_scores:
+        index = y.index(max(y))
+        print('index:{}, function:{}'.format(index,function[index]))
+
 
 def runNeuralNetwork(X, Y, allBadFeture, dataname):
 
@@ -240,18 +354,10 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
         X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
         X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
 
-        # print(X_train)
-        # print(X_test)
-        # print(X_val)
-        # print(Y_train)
-        # print(Y_test)
-        # print(Y_val)
-
         NN_model = Sequential()
 
         # The Input Layer :
-        NN_model.add(Dense(int(numberOfFeature / 2), kernel_initializer='normal', input_shape=(numberOfFeature,),
-                           activation='relu'))
+        NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
 
         # The Hidden Layers :
         NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
@@ -277,10 +383,15 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
         plt.xlabel('Actual ')
         plt.ylabel('Predict')
         plt.show()
+        hist = NN_model.fit(X_train, Y_train, epochs=500, batch_size=32, validation_data=(X_val, Y_val),verbose=0)
+
+        # evaluate the model
+        _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
+        _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
 
         plt.plot(hist.history['loss'])
         plt.plot(hist.history['val_loss'])
-        plt.title('Model loss')
+        plt.title('Model loss - {} - {}'.format(dataname,Y.columns[i]))
         plt.ylabel('Loss')
         plt.xlabel('Epoch')
         plt.legend(['Train', 'Val'], loc='upper right')
@@ -329,19 +440,17 @@ def main():
     givatChaimX, givatChaimY, givatChaimDates = set_data(givatChaimDataSet.copy())
     saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatDates = set_data(saadAndGivatChaimDataSet.copy())
 
-    regressor = LinearRegression()
+    saadAllYBadFeture = Recursive_Feature_Elimination(saadX, saadY)
+    givatChaimAllYBadFeture = Recursive_Feature_Elimination(givatChaimX, givatChaimY)
+    saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(saadAndGivatChaimX, saadAndGivatChaimY)
 
-    saadAllYBadFeture = Recursive_Feature_Elimination(regressor, saadX, saadY)
-    givatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, givatChaimX, givatChaimY)
-    saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(regressor, saadAndGivatChaimX, saadAndGivatChaimY)
+    # runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
+    # runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
+    # runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
 
-    runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
-    runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
-    runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
-
-    runLinearRegression(saadX, saadY, saadAllYBadFeture, regressor,'Saad')
-    runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture, regressor,'Givat Chaim')
-    runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture, regressor,'Saad and Givat Chaim')
+    runLinearRegression(saadX, saadY, saadAllYBadFeture,'Saad')
+    runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
+    runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
 
     gradient_decent(saadX,saadY)
     gradient_decent(givatChaimX, givatChaimY)
