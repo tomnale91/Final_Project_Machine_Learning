@@ -201,134 +201,94 @@ def plot_graph(data,name):
     # plt.show()
     plt.savefig(str(name)+'.png')
 
-def runSGD(X,Y,allBadFeature,dataname,y_scores):
+def runSGD(X_train, X_test, y_train, y_test,i, col,dataname,y_scores,predict):
     lossFunctions = ['squared_loss', 'huber', 'epsilon_insensitive', 'squared_epsilon_insensitive']
     for func in lossFunctions:
         regressor = SGDRegressor(loss=func,eta0=0.001)
-        for i in range(len(Y.columns)):
-            y = Y[Y.columns[i]]
-            # plt.figure(figsize=(15, 10))
-            # plt.title(dataname)
-            # plt.tight_layout()
-            # ax = sns.distplot(y)
 
-            dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
-            X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+        regressor.fit(X_train, y_train)
 
-            regressor.fit(X_train, y_train)
-
-            y_pred = regressor.predict(X_test)
-            y_pred = pd.DataFrame(y_pred)
-            # plt.show()
-            plt.scatter(y_test, y_pred)
-            plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
-            plt.title('SGD - {} - {}'.format(func,Y.columns[i]))
-            plt.xlabel('Actual ')
-            plt.ylabel('Predict')
-            plt.show()
-            score = regressor.score(X_test, y_test)
-            y_scores[i].append(score)
-            print('Farm: {}, loss function: {}, y: {}, score: {}'.format(dataname,func, Y.columns[i], score))
-    return y_scores
+        y_pred = regressor.predict(X_test)
+        y_pred = pd.DataFrame(y_pred)
+        score = regressor.score(X_test, y_test)
+        y_scores[i].append(score)
+        predict[i].append(y_pred)
+        print('Farm: {}, loss function: {}, y: {}, score: {}'.format(dataname,func, col, score))
+    return y_scores,predict
 
 
-def runSimpleLinearRegression(X,Y,allBadFeature,dataname,y_scores):
+def runSimpleLinearRegression(X_train, X_test, y_train, y_test,i,col,dataname,y_scores,predict):
     regressor = LinearRegression()
-    for i in range(len(Y.columns)):
-        y = Y[Y.columns[i]]
-        # plt.figure(figsize=(15, 10))
-        # plt.title(dataname)
-        # plt.tight_layout()
-        # ax = sns.distplot(y)
 
-        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
-        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
 
-        regressor.fit(X_train, y_train)
+    regressor.fit(X_train, y_train)
 
-        y_pred = regressor.predict(X_test)
-        y_pred = pd.DataFrame(y_pred)
-        # plt.show()
-        plt.scatter(y_test, y_pred)
-        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
-        plt.title('Simple Linear Regression - {}'.format(Y.columns[i]))
-        plt.xlabel('Actual ')
-        plt.ylabel('Predict')
-        plt.show()
-        score = regressor.score(X_test, y_test)
-        y_scores[i].append(score)
-        print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
-    return y_scores
+    y_pred = regressor.predict(X_test)
+    y_pred = pd.DataFrame(y_pred)
 
-def runRidge(X,Y,allBadFeature,dataname,y_scores):
+    score = regressor.score(X_test, y_test)
+    y_scores[i].append(score)
+    predict[i].append(y_pred)
+    print('Farm: {}, y: {}, score: {}'.format(dataname, col, score))
+    return y_scores,predict
+
+def runRidge(X_train, X_test, y_train, y_test,i,col,dataname,y_scores,predict):
     regressor = Ridge()
-    for i in range(len(Y.columns)):
-        y = Y[Y.columns[i]]
-        # plt.figure(figsize=(15, 10))
-        # plt.title(dataname)
-        # plt.tight_layout()
-        # ax = sns.distplot(y)
 
-        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
-        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+    regressor.fit(X_train, y_train)
 
-        regressor.fit(X_train, y_train)
+    y_pred = regressor.predict(X_test)
+    y_pred = pd.DataFrame(y_pred)
 
-        y_pred = regressor.predict(X_test)
-        y_pred = pd.DataFrame(y_pred)
-        # plt.show()
-        plt.scatter(y_test, y_pred)
-        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
-        plt.title('Ridge - {}'.format(Y.columns[i]))
-        plt.xlabel('Actual ')
-        plt.ylabel('Predict')
-        plt.show()
-        score = regressor.score(X_test, y_test)
-        y_scores[i].append(score)
-        print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
-    return y_scores
+    score = regressor.score(X_test, y_test)
+    y_scores[i].append(score)
+    predict[i].append(y_pred)
+    print('Farm: {}, y: {}, score: {}'.format(dataname, col, score))
+    return y_scores,predict
 
-def runRidgeCV(X,Y,allBadFeature,dataname,y_scores):
+def runRidgeCV(X_train, X_test, y_train, y_test,i,col,dataname,y_scores,predict):
     regressor = RidgeCV()
-    for i in range(len(Y.columns)):
-        y = Y[Y.columns[i]]
-        # plt.figure(figsize=(15, 10))
-        # plt.title(dataname)
-        # plt.tight_layout()
-        # ax = sns.distplot(y)
 
-        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
-        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+    regressor.fit(X_train, y_train)
 
-        regressor.fit(X_train, y_train)
+    y_pred = regressor.predict(X_test)
+    y_pred = pd.DataFrame(y_pred)
 
-        y_pred = regressor.predict(X_test)
-        y_pred = pd.DataFrame(y_pred)
-        # plt.show()
-        plt.scatter(y_test, y_pred)
-        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
-        plt.title('RidgeCV - {}'.format(Y.columns[i]))
-        plt.xlabel('Actual ')
-        plt.ylabel('Predict')
-        plt.show()
-        score = regressor.score(X_test, y_test)
-        y_scores[i].append(score)
-        print('Farm: {}, y: {}, score: {}'.format(dataname, Y.columns[i], score))
-    return y_scores
+    score = regressor.score(X_test, y_test)
+    y_scores[i].append(score)
+    predict[i].append(y_pred)
+    print('Farm: {}, y: {}, score: {}'.format(dataname, col, score))
+    return y_scores,predict
 
 def runLinearRegression(X, Y, allBadFeature, dataname):  # run linear regression for each y
     function = ['SGD-squared_loss', 'SGD-huber', 'SGD-epsilon_insensitive', 'SGD-squared_epsilon_insensitive','Simple Linear Regression','Ridge','RidgeCV']
     y_scores = [[],[],[],[]]
+    predict = [[],[],[],[]]
 
-    y_scores = runSGD(X,Y,allBadFeature,dataname,y_scores)
-    y_scores = runSimpleLinearRegression(X,Y,allBadFeature,dataname,y_scores)
-    y_scores = runRidge(X,Y,allBadFeature,dataname,y_scores)
-    y_scores = runRidgeCV(X,Y,allBadFeature,dataname,y_scores)
+    for i in range(len(Y.columns)):
+        y = Y[Y.columns[i]]
+
+        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
+        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
+
+        y_scores,predict = runSGD(X_train, X_test, y_train, y_test,i,Y.columns[i],dataname,y_scores,predict)
+        y_scores,predict = runSimpleLinearRegression(X_train, X_test, y_train, y_test,i,Y.columns[i],dataname,y_scores,predict)
+        y_scores,predict = runRidge(X_train, X_test, y_train, y_test,i,Y.columns[i],dataname,y_scores,predict)
+        y_scores,predict = runRidgeCV(X_train, X_test, y_train, y_test,i,Y.columns[i],dataname,y_scores,predict)
 
     print(y_scores)
     for y in y_scores:
         index = y.index(max(y))
         print('index:{}, function:{}'.format(index,function[index]))
+
+    for p in range(len(predict)):
+        for i in range(len(predict[p])):
+            plt.scatter(y_test, predict[p][i])
+            plt.plot([y_test.min(), y_test.max()], [predict[p][i].min(), predict[p][i].max()], 'r', lw=2)
+            plt.title('{} - {}'.format(Y.columns[p],function[p]))
+            plt.xlabel('Actual ')
+            plt.ylabel('Predict')
+            plt.show()
 
 
 def runNeuralNetwork(X, Y, allBadFeture, dataname):
@@ -340,48 +300,53 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
         X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
         X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
 
-        NN_model = Sequential()
+        epochs = [100,500,1000]
+        batch_sizes = [32,400,700]
+        for epoch in epochs:
+            for batch_size in batch_sizes:
+                NN_model = Sequential()
 
-        # The Input Layer :
-        NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
+                # The Input Layer :
+                NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
 
-        # The Hidden Layers :
-        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-        NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+                # The Hidden Layers :
+                NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+                NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+                NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
 
-        # The Output Layer :
-        NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
+                # The Output Layer :
+                NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
 
-        # Compile the network :
-        NN_model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
-        NN_model.summary()
+                # Compile the network :
+                NN_model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
+                NN_model.summary()
 
-        hist = NN_model.fit(X_train, Y_train, epochs=500, batch_size=32, validation_data=(X_val, Y_val), verbose=0)
+                hist = NN_model.fit(X_train, Y_train, epochs=epoch, batch_size=32, validation_data=(X_val, Y_val), verbose=0)
 
-        # evaluate the model
-        _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
-        _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
+                # evaluate the model
+                _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
+                _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
 
-        y_pred = NN_model.predict(X_test)
-        plt.scatter(Y_test, y_pred)
-        plt.plot([Y_test.min(), Y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
-        plt.xlabel('Actual ')
-        plt.ylabel('Predict')
-        plt.show()
-        hist = NN_model.fit(X_train, Y_train, epochs=500, batch_size=32, validation_data=(X_val, Y_val),verbose=0)
+                y_pred = NN_model.predict(X_test)
+                plt.scatter(Y_test, y_pred)
+                plt.title('Neural Networks - epochs: {} , batch_size:{}'.format(epoch,batch_size))
+                plt.plot([Y_test.min(), Y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+                plt.xlabel('Actual ')
+                plt.ylabel('Predict')
+                plt.show()
+                hist = NN_model.fit(X_train, Y_train, epochs=500, batch_size=32, validation_data=(X_val, Y_val),verbose=0)
 
-        # evaluate the model
-        _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
-        _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
+                # evaluate the model
+                _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
+                _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
 
-        plt.plot(hist.history['loss'])
-        plt.plot(hist.history['val_loss'])
-        plt.title('Model loss - {} - {}'.format(dataname,Y.columns[i]))
-        plt.ylabel('Loss')
-        plt.xlabel('Epoch')
-        plt.legend(['Train', 'Val'], loc='upper right')
-        plt.show()
+                plt.plot(hist.history['loss'])
+                plt.plot(hist.history['val_loss'])
+                plt.title('Model loss - {} - {}'.format(dataname,Y.columns[i]))
+                plt.ylabel('Loss')
+                plt.xlabel('Epoch')
+                plt.legend(['Train', 'Val'], loc='upper right')
+                plt.show()
 
 
 def MakingPredictions(X,Y):
@@ -392,7 +357,7 @@ def MakingPredictions(X,Y):
     ests_labels = np.array(['Linear', 'Ridge', 'Lasso', 'ElasticNet', 'BayesRidge', 'OMP'])
     errvals = np.array([])
 
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=20)
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, random_state=20)
 
     for e in ests:
         e.fit(X_train, y_train)
