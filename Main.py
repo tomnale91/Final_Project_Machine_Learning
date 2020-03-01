@@ -284,86 +284,55 @@ def runElasticNet(X_train, X_test, y_train, y_test,dataname):
     plt.show()
     return regressor
 
-
-def runNeuralNetwork(X_train, X_val_and_test, y_train, Y_val_and_test, dataname):
-
+def runNeuralNetwork(X_train, X_test, Y_train, y_test, dataname):
     numberOfFeature = len(X_train.columns)
-    X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
-    for p in range(len(predict)):
-        for i in range(len(predict[p])):
-            plt.scatter(y_test, predict[p][i])
-            plt.plot([y_test.min(), y_test.max()], [predict[p][i].min(), predict[p][i].max()], 'r', lw=2)
-            plt.title('{} - {}'.format(Y.columns[p],function[p]))
-            plt.xlabel('Actual ')
-            plt.ylabel('Predict')
-            plt.show()
+    NN_Models = []
 
-
-def runNeuralNetwork(X, Y, allBadFeture, dataname):
-
-    for i in range(len(Y.columns)):
-        y = Y[Y.columns[i]]
-        numberOfFeature = len(X.columns) - len(allBadFeture[i])
-        dataWithoutBadFeature = X.drop(columns=allBadFeture[i])
-        X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
-        X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
+    X_val, X_test, Y_val, Y_test = train_test_split(X_test, y_test, test_size=0.5)
 
     NN_model = Sequential()
-        epochs = [100,500,1000]
-        batch_sizes = [32,400,700]
-        for epoch in epochs:
-            for batch_size in batch_sizes:
-                NN_model = Sequential()
+    epochs = [100,600]
+    for epoch in epochs:
+        NN_model = Sequential()
 
-    # The Input Layer :
-    NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
-                # The Input Layer :
-                NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
+        # The Input Layer :
+        NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
 
-    # The Hidden Layers :
-    NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-    NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-    NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-                # The Hidden Layers :
-                NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-                NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
-                NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+        # The Hidden Layers :
+        NN_model.add(Dense(128, kernel_initializer='normal', activation='relu'))
+        NN_model.add(Dense(128, kernel_initializer='normal', activation='relu'))
 
-    # The Output Layer :
-    NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
-                # The Output Layer :
-                NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
+        # The Output Layer :
+        NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
 
-                # Compile the network :
-                NN_model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
-                NN_model.summary()
+         # Compile the network :
+        NN_model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
+        NN_model.summary()
 
-                hist = NN_model.fit(X_train, Y_train, epochs=epoch, batch_size=32, validation_data=(X_val, Y_val), verbose=0)
+        hist = NN_model.fit(X_train, Y_train, epochs=epoch, validation_data=(X_val, Y_val), verbose=0)
 
-                # evaluate the model
-                _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
-                _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
+        NN_Models.append(NN_model)
 
-                y_pred = NN_model.predict(X_test)
-                plt.scatter(Y_test, y_pred)
-                plt.title('Neural Networks - epochs: {} , batch_size:{}'.format(epoch,batch_size))
-                plt.plot([Y_test.min(), Y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
-                plt.xlabel('Actual ')
-                plt.ylabel('Predict')
-                plt.show()
-                hist = NN_model.fit(X_train, Y_train, epochs=500, batch_size=32, validation_data=(X_val, Y_val),verbose=0)
+    min_Score = 1000
+    best_Model = None
+    for model in NN_Models:
+        score = model.evaluate(X_test, Y_test,verbose=0)[0]
+        if score < min_Score:
+            min_Score = score
+            best_Model = model
 
-                # evaluate the model
-                _, train_acc = NN_model.evaluate(X_train, Y_train, verbose=0)
-                _, test_acc = NN_model.evaluate(X_test, Y_test, verbose=0)
 
-                plt.plot(hist.history['loss'])
-                plt.plot(hist.history['val_loss'])
-                plt.title('Model loss - {} - {}'.format(dataname,Y.columns[i]))
-                plt.ylabel('Loss')
-                plt.xlabel('Epoch')
-                plt.legend(['Train', 'Val'], loc='upper right')
-                plt.show()
+    y_pred = best_Model.predict(X_test)
+    plt.scatter(Y_test, y_pred)
+    plt.title('Neural Networks - {0}\n Score = {1:.3f} '.format(str(dataname), 1-min_Score))
+    plt.plot([Y_test.min(), Y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+    plt.xlabel('Actual ')
+    plt.ylabel('Predict')
+    plt.show()
+
+    return best_Model
+
+
 
 
 def main():
@@ -372,49 +341,85 @@ def main():
     Saad_And_Givat_Chaim = pd.concat([Saad, Givat_Chaim])
 
     dataTypes = [Saad,Givat_Chaim , Saad_And_Givat_Chaim]
+    dataNames = ['Saad','Givat Chaim' , 'Saad And Givat Chaim']
 
     class model:
-        def __init__(self, name, data, X_train, X_test, y_train, y_test):
+        def __init__(self, name, data, X_train, X_test, y_train, y_test,model,model_Name):
             self._name = name
             self._data = data
             self._X_train = X_train
             self._X_test = X_test
             self._y_train = y_train
             self._y_test = y_test
+            self._model = model
+            self._model_Name = model_Name
 
 
     all_models = [[],[],[],[]]
-    for data in dataTypes:
-        X, all_Y , allData= set_data(data.copy())
+    for data in range(len(dataTypes)):
+        X, all_Y , allData= set_data(dataTypes[data].copy())
         bad_features = Recursive_Feature_Elimination(X,all_Y)
         i=0
+
         for col in yCols:
+            all_models[i].append([])
             Y= all_Y[col]
             improved_X = X.drop(labels= bad_features[i], axis = 1)
             X_train, X_test, y_train, y_test = train_test_split(improved_X, Y, test_size=0.3, random_state=0)
 
-            m = model("saad",data.copy() ,X_train, X_test, y_train, y_test)
-
             #run Linear Models:
-            m.elasticNet_model = runElasticNet(X_train, X_test, y_train, y_test, "saad")
-            m.lasso_model = runLasso(X_train, X_test, y_train, y_test, "saad")
-            m.SGD_model = runSGD(X_train, X_test, y_train, y_test, "saad")
-            m.ridge_model = runRidge(X_train, X_test, y_train, y_test, "saad")
-            m.LR_model =  runSimpleLinearRegression(X_train, X_test, y_train, y_test, "saad")
+            all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runElasticNet(X_train, X_test, y_train, y_test, dataNames[data]),'Elastic Net'))
 
-            m.NN_model = runNeuralNetwork(X_train, X_test, y_train, y_test,"saad")
+            all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runLasso(X_train, X_test, y_train, y_test, dataNames[data]),'Lasso'))
 
-            all_models[i].append(m)
+            all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runSGD(X_train, X_test, y_train, y_test, dataNames[data]),'SGD'))
+
+            all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runRidge(X_train, X_test, y_train, y_test, dataNames[data]),'Ridge'))
+
+            all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runSimpleLinearRegression(X_train, X_test, y_train, y_test, dataNames[data]),'Linear Regression'))
+
+            #all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runNeuralNetwork(X_train, X_test, y_train, y_test,dataNames[data]),'Neural Networks'))
             i+=1
     i = 0
+    max_Score_Saad = 0
+    max_Score_Givat_Chaim = 0
+    max_Score_Saad_And_Givat_Chaim =0
+    best_Model_Saad = None
+    best_Model_Givat_Chaim = None
+    best_Model_Saad_And_Givat_Chaim = None
+
     for model_A in all_models[i]:
-        max_Score =0;
-        best_Model =None
-        for model_B in all_models[i]:
-            score = model_A.elasticNet_model.score(model_B._X_test, model_B._y_test)
-            if score>max_Score:
-                max_Score =score
+        score = 0
+        for model_B in model_A:
+            if(i==0):
+                if(model_B._model_Name == 'Neural Networks'):
+                    score = 1- model_B._model.evaluate(model_B._X_test, model_B._y_test,verbose=0)[0]
+                else:
+                    score = model_B._model.score(model_B._X_test, model_B._y_test)
+                if score > max_Score_Saad:
+                    max_Score_Saad = score
+                    best_Model_Saad = model_B
+            elif(i==1):
+                if (model_B._model_Name == 'Neural Networks'):
+                    score = 1 - model_B._model.evaluate(model_B._X_test, model_B._y_test, verbose=0)[0]
+                else:
+                    score = model_B._model.score(model_B._X_test, model_B._y_test)
+                if score > max_Score_Givat_Chaim:
+                    max_Score_Givat_Chaim = score
+                    best_Model_Givat_Chaim = model_B
+            else:
+                if (model_B._model_Name == 'Neural Networks'):
+                    score = 1 - model_B._model.evaluate(model_B._X_test, model_B._y_test, verbose=0)[0]
+                else:
+                    score = model_B._model.score(model_B._X_test, model_B._y_test)
+                if score>max_Score_Saad_And_Givat_Chaim:
+                    max_Score_Saad_And_Givat_Chaim = score
+                    best_Model_Saad_And_Givat_Chaim = model_B
         i += 1
+
+    print('best Saad Model: {}'.format(best_Model_Saad._model_Name))
+    print('best Givat Chaim Model: {}'.format(best_Model_Givat_Chaim._model_Name))
+    print('best Saad And Givat Chaim Model: {}'.format(best_Model_Saad_And_Givat_Chaim._model_Name))
 
 
 if __name__ == "__main__":
