@@ -23,22 +23,19 @@ from sklearn.feature_selection import RFE
 from keras.models import Sequential
 from keras.layers import Dense
 
+yCols = ['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305']
+
 
 def rescale_data(data):
     scaled_data = StandardScaler().fit_transform(data)
     return pd.DataFrame(scaled_data)
 
-
 def seperateXY(data):
-    yCols = ['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305']
     dataY = pd.DataFrame()
     for col in yCols:
         dataY[col] = data[col]
     data = data.drop(columns=['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305'])
-
-    print(data)
     return data, dataY
-
 
 def set_data(data):
     data = data.loc[(data['DIM'] <= 54)]  # get only the rows with DIM < 54
@@ -54,7 +51,6 @@ def set_data(data):
     dataX, dataY = seperateXY(data)
 
     return dataX, dataY, dfDate
-
 
 def Recursive_Feature_Elimination(X, y):
     regressor = LinearRegression()
@@ -100,13 +96,17 @@ def gradient_decent(X, Y):
     theta = np.zeros(m)
 
     alpha = 0.1
-    Ma=1000
+    Ma=20
     npa = np.zeros(Ma,dtype=np.float32)
     yCols = ['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305']
     badFeature=[]
     for col in yCols:
-        j_theta_history1 = gd(X, Y[col], theta, alpha=alpha, M=Ma)
+        theta, j_theta_history1 = gd(X, Y[col], theta, alpha=alpha, M=Ma)
         plot_graph(j_theta_history1, col)
+        p = classifierPredict(theta, X)
+        print(p)
+        print(Y[col])
+        print("Train Accuracy:", sum(p ==  Y[col])[0], "%")
         npa += np.asarray(j_theta_history1, dtype=np.float32)
     plot_graph(np.true_divide(npa, 4), "Y")
 
@@ -119,9 +119,17 @@ def gradient_decent(X, Y):
     j_theta_history3 = momentum(X,Y['sum milk 305'],theta,alpha=alpha, M=2)
     plot_graph(j_theta_history3, alpha)
 
+def classifierPredict(theta, X):
+    """
+    take in numpy array of theta and X and predict the class
+    """
+    predictions = X.dot(theta)
+
+    return predictions > 0
 
 def h_theta(x, theta):
     return np.dot(x, theta)
+
 def j_theta(x, y, theta):
     print('j_theta')
     m, n = x.shape
@@ -155,7 +163,7 @@ def gd(x, y, theta, alpha=0.1, M=10 ** 3, delta=10 ** -8, epsilon=10 ** -8):
         j_theta_history.append(j_theta(x, y, theta))
         k = k + 1
 
-    return j_theta_history
+    return theta[j] , j_theta_history
 
 def gd_mini_batch(x, y, theta, alpha=0.1, M=10 ** 3, delta=10 ** -8, epsilon=10 ** -8, N=100):
     print('gd_mini_batch')
@@ -201,86 +209,86 @@ def plot_graph(data,name):
     # plt.show()
     plt.savefig(str(name)+'.png')
 
-def runSGD(X_train, X_test, y_train, y_test,i, col,dataname,y_scores,predict):
-    lossFunctions = ['squared_loss', 'huber', 'epsilon_insensitive', 'squared_epsilon_insensitive']
-    for func in lossFunctions:
-        regressor = SGDRegressor(loss=func,eta0=0.001)
+def runSGD(X_train, X_test, y_train, y_test,dataname):
+    regressor = SGDRegressor(loss='epsilon_insensitive',eta0=0.001)
+    regressor.fit(X_train, y_train)
 
-        regressor.fit(X_train, y_train)
+    y_pred = regressor.predict(X_test)
+    # plt.show()
+    plt.scatter(y_test, y_pred)
+    plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+    score = regressor.score(X_test, y_test)
+    plt.title('SGD - {0}\n Score = {1:.3f} '.format(str(dataname), score))
+    plt.xlabel('Actual ')
+    plt.ylabel('Predict')
+    plt.show(block=False)
+    return regressor
 
-        y_pred = regressor.predict(X_test)
-        y_pred = pd.DataFrame(y_pred)
-        score = regressor.score(X_test, y_test)
-        y_scores[i].append(score)
-        predict[i].append(y_pred)
-        print('Farm: {}, loss function: {}, y: {}, score: {}'.format(dataname,func, col, score))
-    return y_scores,predict
-
-
-def runSimpleLinearRegression(X_train, X_test, y_train, y_test,i,col,dataname,y_scores,predict):
+def runSimpleLinearRegression(X_train, X_test, y_train, y_test,dataname):
     regressor = LinearRegression()
-
-
     regressor.fit(X_train, y_train)
 
     y_pred = regressor.predict(X_test)
-    y_pred = pd.DataFrame(y_pred)
-
+    # plt.show()
+    plt.scatter(y_test, y_pred)
+    plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
     score = regressor.score(X_test, y_test)
-    y_scores[i].append(score)
-    predict[i].append(y_pred)
-    print('Farm: {}, y: {}, score: {}'.format(dataname, col, score))
-    return y_scores,predict
+    plt.title('Linear Regression - {0}\n Score = {1:.3f} '.format(str(dataname), score))
+    plt.xlabel('Actual ')
+    plt.ylabel('Predict')
+    plt.show(block=False)
+    return regressor
 
-def runRidge(X_train, X_test, y_train, y_test,i,col,dataname,y_scores,predict):
-    regressor = Ridge()
-
+def runRidge(X_train, X_test, y_train, y_test,dataname):
+    regressor = linear_model.Ridge()
     regressor.fit(X_train, y_train)
 
     y_pred = regressor.predict(X_test)
-    y_pred = pd.DataFrame(y_pred)
-
+    # plt.show()
+    plt.scatter(y_test, y_pred)
+    plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
     score = regressor.score(X_test, y_test)
-    y_scores[i].append(score)
-    predict[i].append(y_pred)
-    print('Farm: {}, y: {}, score: {}'.format(dataname, col, score))
-    return y_scores,predict
+    plt.title('Ridge - {0}\n Score = {1:.3f} '.format(str(dataname), score))
+    plt.xlabel('Actual ')
+    plt.ylabel('Predict')
+    plt.show(block=False)
+    return regressor
 
-def runRidgeCV(X_train, X_test, y_train, y_test,i,col,dataname,y_scores,predict):
-    regressor = RidgeCV()
-
+def runLasso(X_train, X_test, y_train, y_test,dataname):
+    regressor = linear_model.Lasso(alpha=0.1)
     regressor.fit(X_train, y_train)
 
     y_pred = regressor.predict(X_test)
-    y_pred = pd.DataFrame(y_pred)
-
+    # plt.show()
+    plt.scatter(y_test, y_pred)
+    plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
     score = regressor.score(X_test, y_test)
-    y_scores[i].append(score)
-    predict[i].append(y_pred)
-    print('Farm: {}, y: {}, score: {}'.format(dataname, col, score))
-    return y_scores,predict
+    plt.title('Lasso - {0}\n Score = {1:.3f} '.format(str(dataname), score))
+    plt.xlabel('Actual ')
+    plt.ylabel('Predict')
+    plt.show(block=False)
+    return regressor
 
-def runLinearRegression(X, Y, allBadFeature, dataname):  # run linear regression for each y
-    function = ['SGD-squared_loss', 'SGD-huber', 'SGD-epsilon_insensitive', 'SGD-squared_epsilon_insensitive','Simple Linear Regression','Ridge','RidgeCV']
-    y_scores = [[],[],[],[]]
-    predict = [[],[],[],[]]
+def runElasticNet(X_train, X_test, y_train, y_test,dataname):
+    regressor = linear_model.ElasticNet()
+    regressor.fit(X_train, y_train)
 
-    for i in range(len(Y.columns)):
-        y = Y[Y.columns[i]]
+    y_pred = regressor.predict(X_test)
+    # plt.show()
+    plt.scatter(y_test, y_pred)
+    plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], 'r', lw=2)
+    score = regressor.score(X_test, y_test)
+    plt.title('Elastic Net - {0}\n Score = {1:.3f} '.format(str(dataname), score))
+    plt.xlabel('Actual ')
+    plt.ylabel('Predict')
+    plt.show()
+    return regressor
 
-        dataWithoutBadFeature = X.drop(columns=allBadFeature[i])
-        X_train, X_test, y_train, y_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
 
-        y_scores,predict = runSGD(X_train, X_test, y_train, y_test,i,Y.columns[i],dataname,y_scores,predict)
-        y_scores,predict = runSimpleLinearRegression(X_train, X_test, y_train, y_test,i,Y.columns[i],dataname,y_scores,predict)
-        y_scores,predict = runRidge(X_train, X_test, y_train, y_test,i,Y.columns[i],dataname,y_scores,predict)
-        y_scores,predict = runRidgeCV(X_train, X_test, y_train, y_test,i,Y.columns[i],dataname,y_scores,predict)
+def runNeuralNetwork(X_train, X_val_and_test, y_train, Y_val_and_test, dataname):
 
-    print(y_scores)
-    for y in y_scores:
-        index = y.index(max(y))
-        print('index:{}, function:{}'.format(index,function[index]))
-
+    numberOfFeature = len(X_train.columns)
+    X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
     for p in range(len(predict)):
         for i in range(len(predict[p])):
             plt.scatter(y_test, predict[p][i])
@@ -300,20 +308,29 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
         X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(dataWithoutBadFeature, y, test_size=0.3, random_state=0)
         X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
 
+    NN_model = Sequential()
         epochs = [100,500,1000]
         batch_sizes = [32,400,700]
         for epoch in epochs:
             for batch_size in batch_sizes:
                 NN_model = Sequential()
 
+    # The Input Layer :
+    NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
                 # The Input Layer :
                 NN_model.add(Dense(int(numberOfFeature/2), kernel_initializer='normal', input_shape=(numberOfFeature,), activation='relu'))
 
+    # The Hidden Layers :
+    NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+    NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
+    NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
                 # The Hidden Layers :
                 NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
                 NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
                 NN_model.add(Dense(256, kernel_initializer='normal', activation='relu'))
 
+    # The Output Layer :
+    NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
                 # The Output Layer :
                 NN_model.add(Dense(1, kernel_initializer='normal', activation='linear'))
 
@@ -349,67 +366,56 @@ def runNeuralNetwork(X, Y, allBadFeture, dataname):
                 plt.show()
 
 
-def MakingPredictions(X,Y):
-    rs = 1
-    ests = [linear_model.LinearRegression(), linear_model.Ridge(),
-            linear_model.Lasso(), linear_model.ElasticNet(),
-            linear_model.BayesianRidge(), linear_model.OrthogonalMatchingPursuit()]
-    ests_labels = np.array(['Linear', 'Ridge', 'Lasso', 'ElasticNet', 'BayesRidge', 'OMP'])
-    errvals = np.array([])
-
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, random_state=20)
-
-    for e in ests:
-        e.fit(X_train, y_train)
-        this_err = metrics.median_absolute_error(y_test, e.predict(X_test))
-        # print "got error %0.2f" % this_err
-        errvals = np.append(errvals, this_err)
-
-    pos = np.arange(errvals.shape[0])
-    srt = np.argsort(errvals)
-    plt.figure(figsize=(7, 5))
-    plt.bar(pos, errvals[srt], align='center')
-    plt.xticks(pos, ests_labels[srt])
-    plt.xlabel('Estimator')
-    plt.ylabel('Median Absolute Error')
-    plt.show()
-
-def run_compare_with_linear_models(X,Y):
-    yCols = ['sum milk 305', 'sum fat 305', 'sum prot 305', 'sum Ecm 305']
-    plt.style.use('ggplot')
-
-    for col in yCols:
-        alldata = pd.concat([X, Y[col]])
-        MakingPredictions(X, Y[col])
-
 def main():
-    saadDataSet = pd.read_csv('Oded-File_Farm_56_Calibration_Saad.csv')
-    givatChaimDataSet = pd.read_csv('Oded-File_Farm_626_Calibration_Givat_Chaim.csv')
-    saadAndGivatChaimDataSet = pd.concat([saadDataSet, givatChaimDataSet])
+    Saad = pd.read_csv('Oded-File_Farm_56_Calibration_Saad.csv')
+    Givat_Chaim = pd.read_csv('Oded-File_Farm_626_Calibration_Givat_Chaim.csv')
+    Saad_And_Givat_Chaim = pd.concat([Saad, Givat_Chaim])
 
-    saadX, saadY, saadDates = set_data(saadDataSet.copy())
-    givatChaimX, givatChaimY, givatChaimDates = set_data(givatChaimDataSet.copy())
-    saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatDates = set_data(saadAndGivatChaimDataSet.copy())
+    dataTypes = [Saad,Givat_Chaim , Saad_And_Givat_Chaim]
 
-    saadAllYBadFeture = Recursive_Feature_Elimination(saadX, saadY)
-    givatChaimAllYBadFeture = Recursive_Feature_Elimination(givatChaimX, givatChaimY)
-    saadAndGivatChaimAllYBadFeture = Recursive_Feature_Elimination(saadAndGivatChaimX, saadAndGivatChaimY)
+    class model:
+        def __init__(self, name, data, X_train, X_test, y_train, y_test):
+            self._name = name
+            self._data = data
+            self._X_train = X_train
+            self._X_test = X_test
+            self._y_train = y_train
+            self._y_test = y_test
 
-    # runNeuralNetwork(saadX, saadY, saadAllYBadFeture,'Saad')
-    # runNeuralNetwork(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
-    # runNeuralNetwork(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
 
-    runLinearRegression(saadX, saadY, saadAllYBadFeture,'Saad')
-    runLinearRegression(givatChaimX, givatChaimY, givatChaimAllYBadFeture,'Givat Chaim')
-    runLinearRegression(saadAndGivatChaimX, saadAndGivatChaimY, saadAndGivatChaimAllYBadFeture,'Saad and Givat Chaim')
+    all_models = [[],[],[],[]]
+    for data in dataTypes:
+        X, all_Y , allData= set_data(data.copy())
+        bad_features = Recursive_Feature_Elimination(X,all_Y)
+        i=0
+        for col in yCols:
+            Y= all_Y[col]
+            improved_X = X.drop(labels= bad_features[i], axis = 1)
+            X_train, X_test, y_train, y_test = train_test_split(improved_X, Y, test_size=0.3, random_state=0)
 
-    gradient_decent(saadX,saadY)
-    gradient_decent(givatChaimX, givatChaimY)
-    gradient_decent(saadAndGivatChaimX, saadAndGivatChaimY)
+            m = model("saad",data.copy() ,X_train, X_test, y_train, y_test)
 
-    run_compare_with_linear_models(saadX,saadY)
-    run_compare_with_linear_models(givatChaimX, givatChaimY)
-    run_compare_with_linear_models(saadAndGivatChaimX, saadAndGivatChaimY)
+            #run Linear Models:
+            m.elasticNet_model = runElasticNet(X_train, X_test, y_train, y_test, "saad")
+            m.lasso_model = runLasso(X_train, X_test, y_train, y_test, "saad")
+            m.SGD_model = runSGD(X_train, X_test, y_train, y_test, "saad")
+            m.ridge_model = runRidge(X_train, X_test, y_train, y_test, "saad")
+            m.LR_model =  runSimpleLinearRegression(X_train, X_test, y_train, y_test, "saad")
+
+            m.NN_model = runNeuralNetwork(X_train, X_test, y_train, y_test,"saad")
+
+            all_models[i].append(m)
+            i+=1
+    i = 0
+    for model_A in all_models[i]:
+        max_Score =0;
+        best_Model =None
+        for model_B in all_models[i]:
+            score = model_A.elasticNet_model.score(model_B._X_test, model_B._y_test)
+            if score>max_Score:
+                max_Score =score
+        i += 1
+
 
 if __name__ == "__main__":
     main()
