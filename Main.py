@@ -378,7 +378,7 @@ def main():
 
             all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runSimpleLinearRegression(X_train, X_test, y_train, y_test, dataNames[data]),'Linear Regression'))
 
-            #all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runNeuralNetwork(X_train, X_test, y_train, y_test,dataNames[data]),'Neural Networks'))
+            all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runNeuralNetwork(X_train, X_test, y_train, y_test,dataNames[data]),'Neural Networks'))
             i+=1
     i = 0
     max_Score_Saad = 0
