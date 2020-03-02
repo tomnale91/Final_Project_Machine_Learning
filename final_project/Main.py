@@ -307,7 +307,7 @@ def main():
             all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runElasticNet(X_train, X_test, y_train, y_test, dataNames[data]),'Elastic Net'))
 
             all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runLasso(X_train, X_test, y_train, y_test, dataNames[data]),'Lasso'))
-
+            
             all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runSGD(X_train, X_test, y_train, y_test, dataNames[data]),'SGD'))
 
             all_models[i][data].append(model(dataNames[data], dataTypes[data].copy(), X_train, X_test, y_train, y_test,runRidge(X_train, X_test, y_train, y_test, dataNames[data]),'Ridge'))
